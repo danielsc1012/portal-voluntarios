@@ -108,6 +108,10 @@ select,.btn{font:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--
 .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);margin-top:8px;align-items:center}
 .legend i{display:inline-block;width:10px;height:14px;border-radius:2px;vertical-align:-3px;margin-right:4px;background:var(--track)}
 .wkinfo{font-size:12.5px;color:var(--body);min-height:20px;margin-top:6px}
+.explain{grid-column:1/-1;display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:8px;background:var(--bg);border-left:4px solid var(--teal);margin-top:6px}
+.explain.hi{border-left-color:var(--hi)} .explain.md{border-left-color:var(--md-bar)} .explain.in{border-left-color:var(--in-bar)}
+.explain p{margin:0;font-size:13.5px;color:var(--fg);line-height:1.45}
+.badge[title],.name[title]{cursor:help}
 .facts{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13px;margin:0}
 .facts dt{color:var(--muted)} .facts dd{margin:0;font-weight:500}
 .tl{list-style:none;margin:0;padding:0;font-size:13px}
@@ -224,6 +228,7 @@ select,.btn{font:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--
       <h2>Cómo se calcula</h2>
       <p>El portal lee de Planning Center Services <b>todos los tipos de servicio</b> de las últimas 52 semanas y de las próximas 6. Cuenta a una persona como "sirviendo" en un plan si confirmó o todavía no respondió. La posición "Leaders" no cuenta: es solo para que los pastores vean los planes. Si <b>declinó</b>, no cuenta como servicio, pero se muestra aparte, porque declinar varias veces seguidas suele ser la primera señal de cansancio.</p>
       <p><b>Solo domingos / Todos los eventos:</b> el botón junto a los filtros cambia qué cuenta como servir. "Solo domingos" mira únicamente el servicio dominical; "Todos los eventos" suma también miércoles, jóvenes, eventos especiales y cualquier otro tipo de servicio en Planning Center. Todos los números y niveles se recalculan al instante.</p>
+      <p><b>Servicio:</b> un equipo en un día. Si alguien tiene dos posiciones en el mismo equipo el mismo día, cuenta una sola vez; si sirve en dos equipos distintos el mismo día, cuenta como dos servicios. Pasa el cursor sobre el nivel o el nombre (o abre la persona) para ver por qué tiene esa calificación.</p>
       <p><b>Semanas servidas:</b> cuántas semanas distintas (de domingo a sábado) sirvió de las últimas 52. Servir el domingo y el miércoles de la misma semana cuenta como una semana; en la ficha de la persona se ve más oscuro.</p>
       <p><b>Racha:</b> cuántas semanas seguidas lleva sirviendo sin un descanso, hasta la semana actual. Si ya está programada para las semanas que siguen, se suman y se marca "+N programadas", para que puedas actuar antes de que pase.</p>
       <p><b>Equipos:</b> en cuántos ministerios distintos sirvió en el año. La meta de la iglesia es <b>máximo <span class="maxT"></span></b>. Los equipos con el mismo nombre en distintos tipos de servicio (por ejemplo, "Alabanza" el domingo y el miércoles) cuentan como uno.</p>
@@ -268,7 +273,7 @@ const stName = i => D.st[i] ?? "";
 
 let P = [];   // personas calculadas
 function compute(){
-  const per = D.p.map((p,i)=>({i, name:p[0], roster:p[1], wk:new Array(NW).fill(null).map(()=>({n:0,days:new Set(),dec:0,items:[]})), mins:{}, dec90:0, items:[]}));
+  const per = D.p.map((p,i)=>({i, name:p[0], roster:p[1], wk:new Array(NW).fill(null).map(()=>({n:0,days:new Set(),svc:new Set(),dec:0,items:[]})), mins:{}, minDays:{}, svcYear:new Set(), dec90:0, items:[]}));
   for(const [pi,off,ti,st,si] of D.a){
     if(svcMode==="sun"){ if(SUN_ST.size ? !SUN_ST.has(si) : dayDate(off).getDay()!==0) continue; }
     else if(excludedST.has(si)) continue;
@@ -279,8 +284,12 @@ function compute(){
     c.items.push(it); p.items.push(it);
     if(st==="D"){ c.dec++; if(off<=todayOff && off>todayOff-90) p.dec90++; continue; }
     c.days.add(off);
-    if(w<=CUR) p.mins[it.mk] = (p.mins[it.mk]||0)+1;
+    // Un servicio = un equipo en un día. Dos posiciones (o dos planes) del mismo equipo el mismo día cuentan una vez;
+    // dos equipos distintos el mismo día cuentan como dos.
+    const sk = off+"|"+it.mk; c.svc.add(sk);
+    if(w<=CUR){ p.svcYear.add(sk); (p.minDays[it.mk] ||= new Set()).add(off); }
   }
+  for(const p of per) for(const [k,s] of Object.entries(p.minDays)) p.mins[k] = s.size;
   P = [];
   for(const p of per){
     const served = p.wk.map(c=>c.days.size>0);
@@ -314,13 +323,43 @@ function compute(){
     if(p.dec90>=3) why.push(`declinó ${p.dec90} veces en 90 días`);
     const rate = weeks/52*13;
     const trend = r13 - rate >= 2.5 ? "up" : rate - r13 >= 2.5 ? "down" : "";
-    P.push({...p, weeks, upcoming, streak, ahead, sTot, lastRest, r13, nMin, lvl, why, trend,
+    P.push({...p, services:p.svcYear.size, weeks, upcoming, streak, ahead, sTot, lastRest, r13, nMin, lvl, why, trend,
       rank:(lvl==="hi"?3e6:lvl==="md"?2e6:lvl==="ok"?1e6:0) + weeks*1000 + sTot*10 + nMin});
   }
 }
 
 const LV = {hi:["▲","Alto"], md:["●","Medio"], ok:["✓","Sano"], in:["○","Baja actividad"]};
-const badge = l => `<span class="badge ${l}"><span aria-hidden="true">${LV[l][0]}</span>${LV[l][1]}</span>`;
+const badge = (l,tip) => `<span class="badge ${l}"${tip?` title="${esc(tip)}"`:""}><span aria-hidden="true">${LV[l][0]}</span>${LV[l][1]}</span>`;
+const sem = n => `${n} ${n===1?"semana":"semanas"}`;
+const yList = a => a.length<2 ? (a[0]||"") : a.slice(0,-1).join(", ")+" y "+a[a.length-1];
+// Explicación en lenguaje sencillo de por qué la persona tiene su nivel
+function explain(p){
+  const racha = `lleva ${sem(p.streak)} seguidas sin descanso${p.ahead?` y ya tiene ${p.ahead} más programadas`:""}`;
+  let s;
+  if(p.lvl==="hi"){
+    const r=[];
+    if(p.weeks>=T.hiW) r.push(`sirvió ${p.weeks} de las últimas 52 semanas (riesgo alto desde ${T.hiW})`);
+    if(p.sTot>=T.hiS) r.push(`${racha} (riesgo alto desde ${T.hiS})`);
+    if(p.nMin>T.maxT) r.push(`sirve en ${p.nMin} equipos (la meta es máximo ${T.maxT})`);
+    s = `Riesgo alto porque ${yList(r)}.`;
+  } else if(p.lvl==="md"){
+    const r=[];
+    if(p.weeks>=T.mdW) r.push(`sirvió ${p.weeks} de las últimas 52 semanas (riesgo medio desde ${T.mdW})`);
+    if(p.sTot>=T.mdS) r.push(`${racha} (riesgo medio desde ${T.mdS})`);
+    s = `Riesgo medio porque ${yList(r)}. Todavía no llega a riesgo alto (${T.hiW} semanas, racha de ${T.hiS} o más de ${T.maxT} equipos).`;
+  } else if(p.lvl==="in"){
+    const r=[];
+    if(p.weeks<=T.inW) r.push(`solo sirvió ${p.weeks} de las últimas 52 semanas (baja actividad hasta ${T.inW}, ≈${Math.round(T.inW/52*100)}% del tiempo)`);
+    if(p.r13<=T.inR) r.push(`en las últimas 13 semanas solo sirvió ${p.r13} (baja actividad hasta ${T.inR})`);
+    s = `Baja actividad porque ${yList(r)}.`;
+    if(p.weeks>=T.mdW) s += ` En el año sirvió ${p.weeks} semanas, pero lo reciente pesa más: puede que se esté cansando o desconectando.`;
+    else s += ` No significa que dejó de servir; vale la pena buscar a esta persona y animarla.`;
+  } else {
+    s = `Sano: sirvió ${p.weeks} de las últimas 52 semanas (riesgo medio empieza en ${T.mdW}), su racha actual es de ${sem(p.streak)} (medio desde ${T.mdS}) y está en ${p.nMin} ${p.nMin===1?"equipo":"equipos"} (máximo ${T.maxT}).`;
+  }
+  if(p.dec90>=3) s += ` Además declinó ${p.dec90} veces en los últimos 90 días, que puede ser señal de cansancio.`;
+  return s;
+}
 
 function filtered(){
   const q = norm(S.q);
@@ -343,8 +382,8 @@ function row(p){
   const pct = p.weeks/52*100, mk = T.hiW/52*100;
   const tr = p.trend==="up"?`<span class="up" title="Más cargado que su promedio">↑</span>`:p.trend==="down"?`<span class="down" title="Menos que su promedio">↓</span>`:"";
   return `<details class="prow" data-i="${p.i}" ${S.open.has(p.i)?"open":""}><summary>
-    <span class="name">${esc(p.name)}${p.why.length?`<span class="why">${esc(p.why.join(" · "))}</span>`:""}</span>
-    <span>${badge(p.lvl)}</span>
+    <span class="name" title="${esc(explain(p))}">${esc(p.name)}${p.why.length?`<span class="why">${esc(p.why.join(" · "))}</span>`:""}</span>
+    <span>${badge(p.lvl, explain(p))}</span>
     <span class="cell"><span class="lab">Semanas</span><span class="bar"><span class="tr"><span class="fl ${p.weeks>=T.hiW?"hi":p.weeks>=T.mdW?"md":p.weeks<=T.inW?"in":""}" style="width:${pct}%"></span><span class="mk" style="left:${mk}%" title="Umbral de riesgo alto"></span></span><b>${p.weeks}</b></span></span>
     <span class="num cell"><span class="lab">Racha</span>${p.streak}${p.ahead?`<span class="why">+${p.ahead} prog.</span>`:""}</span>
     <span class="cell"><span class="lab">Equipos</span><span class="teams">${teamsCell(p)}</span></span>
@@ -356,11 +395,11 @@ function row(p){
 function detail(p){
   let cells="";
   for(let w=0; w<NW; w++){
-    const c = p.wk[w], n=c.days.size, lv = n>=3?3:n;
+    const c = p.wk[w], n=c.svc.size, lv = n>=3?3:n;
     const cls = ["wk"]; if(lv) cls.push("l"+lv); if(c.dec && !n) cls.push("dec"); if(w>CUR) cls.push("fut"); if(w===CUR+1) cls.push("sep");
     cells += `<button class="${cls.join(" ")}" data-w="${w}" aria-label="Semana del ${fmt(dayDate(w*7),true)}"></button>`;
   }
-  const mins = Object.entries(p.mins).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`<li><span>${esc(minName[k]||k)}</span><span>${n} ${n===1?"vez":"veces"}</span></li>`).join("") || `<li><span>—</span><span></span></li>`;
+  const mins = Object.entries(p.mins).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`<li><span>${esc(minName[k]||k)}</span><span>${n} ${n===1?"servicio":"servicios"}</span></li>`).join("") || `<li><span>—</span><span></span></li>`;
   const rosterOnly = [...new Set(p.roster.map(ti=>minKey[ti]))].filter(k=>!p.mins[k]).map(k=>esc(minName[k]||k));
   const recent = p.items.filter(it=>it.off<=todayOff).sort((a,b)=>b.off-a.off).slice(0,8)
     .map(it=>`<li><span class="${it.dec?"dec-t":""}">${esc(it.team)}${it.dec?" · declinó":""}</span><span>${fmt(dayDate(it.off))} · ${esc(it.st)}</span></li>`).join("");
@@ -368,11 +407,12 @@ function detail(p){
     .map(it=>`<li><span class="${it.dec?"dec-t":""}">${esc(it.team)}${it.dec?" · declinó":""}</span><span>${fmt(dayDate(it.off))} · ${esc(it.st)}</span></li>`).join("");
   const rest = p.lastRest<0 ? "No ha descansado ninguna semana en el año" : p.lastRest===CUR ? "Esta semana" : `Semana del ${fmt(dayDate(p.lastRest*7),true)} (hace ${CUR-p.lastRest} sem.)`;
   return `<div class="detail">
+    <div class="explain ${p.lvl}">${badge(p.lvl)}<p>${esc(explain(p))}</p></div>
     <div>
       <h3>Sus 52 semanas y las próximas 6</h3>
       <div class="strip" data-p="${p.i}">${cells}</div>
       <div class="stripaxis"><span>${fmt(start,true)}</span><span>hoy</span><span>+6 sem.</span></div>
-      <div class="legend"><span><i></i>No sirvió</span><span><i style="background:var(--h1)"></i>1 día</span><span><i style="background:var(--h2)"></i>2 días</span><span><i style="background:var(--h3)"></i>3+ días</span><span><i style="box-shadow:inset 0 0 0 1.5px var(--hi)"></i>Declinó</span><span><i style="background:var(--h2);opacity:.55"></i>Programado</span></div>
+      <div class="legend"><span><i></i>No sirvió</span><span><i style="background:var(--h1)"></i>1 servicio</span><span><i style="background:var(--h2)"></i>2 servicios</span><span><i style="background:var(--h3)"></i>3+ servicios</span><span><i style="box-shadow:inset 0 0 0 1.5px var(--hi)"></i>Declinó</span><span><i style="background:var(--h2);opacity:.55"></i>Programado</span></div>
       <div class="wkinfo" id="wkinfo-${p.i}">Pasa el cursor (o toca) una semana para ver el detalle.</div>
       <h3>Últimas programaciones</h3><ul class="tl">${recent||"<li><span>—</span><span></span></li>"}</ul>
     </div>
@@ -381,6 +421,7 @@ function detail(p){
       <dl class="facts">
         <dt>Nivel</dt><dd>${badge(p.lvl)}</dd>
         <dt>Semanas servidas</dt><dd>${p.weeks} de 52 (${Math.round(p.weeks/52*100)}%)</dd>
+        <dt>Servicios en el año</dt><dd>${p.services}</dd>
         <dt>Racha actual</dt><dd>${p.streak} sem.${p.ahead?` + ${p.ahead} programadas`:""}</dd>
         <dt>Último descanso</dt><dd>${rest}</dd>
         <dt>Declinó (90 días)</dt><dd>${p.dec90}</dd>
