@@ -244,8 +244,8 @@ select,.btn{font:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--
 <script>
 const D = __DATA__;
 const UPDATED = "__UPDATED__";
-const DEF = {hiW:39, mdW:26, hiS:8, mdS:5, maxT:2, inW:10, inR:2};
-const LBL = {hiW:["Riesgo alto desde","semanas servidas de 52"], mdW:["Riesgo medio desde","semanas servidas de 52"], hiS:["Riesgo alto: racha de","semanas seguidas o más"], mdS:["Riesgo medio: racha de","semanas seguidas o más"], maxT:["Máximo de equipos","más de esto = riesgo alto"], inW:["Baja actividad hasta","semanas servidas de 52 (10 ≈ 20%)"], inR:["Baja actividad reciente hasta","de las últimas 13 semanas"]};
+const DEF = {hiW:39, mdW:32, hiS:8, mdS:5, maxT:2, inW:10, inR:2};
+const LBL = {hiW:["Riesgo alto desde","semanas servidas de 52 (39 = 75%)"], mdW:["Riesgo medio desde","semanas servidas de 52 (32 ≈ 62%)"], hiS:["Riesgo alto: racha de","semanas seguidas o más"], mdS:["Riesgo medio: racha de","semanas seguidas o más"], maxT:["Máximo de equipos","más de esto = riesgo alto"], inW:["Baja actividad hasta","semanas servidas de 52 (10 ≈ 20%)"], inR:["Baja actividad reciente hasta","de las últimas 13 semanas"]};
 const store = {get(k,d){try{const v=localStorage.getItem("pv-"+k);return v?JSON.parse(v):d}catch(e){return d}}, set(k,v){try{localStorage.setItem("pv-"+k,JSON.stringify(v))}catch(e){}}};
 let T = Object.assign({}, DEF, store.get("thr", {}));
 let excludedST = new Set(store.get("exst", []));
@@ -330,6 +330,7 @@ function compute(){
 
 const LV = {hi:["▲","Alto"], md:["●","Medio"], ok:["✓","Sano"], in:["○","Baja actividad"]};
 const badge = (l,tip) => `<span class="badge ${l}"${tip?` title="${esc(tip)}"`:""}><span aria-hidden="true">${LV[l][0]}</span>${LV[l][1]}</span>`;
+const pc = n => Math.round(n/52*100)+"%";
 const sem = n => `${n} ${n===1?"semana":"semanas"}`;
 const yList = a => a.length<2 ? (a[0]||"") : a.slice(0,-1).join(", ")+" y "+a[a.length-1];
 // Explicación en lenguaje sencillo de por qué la persona tiene su nivel
@@ -338,13 +339,13 @@ function explain(p){
   let s;
   if(p.lvl==="hi"){
     const r=[];
-    if(p.weeks>=T.hiW) r.push(`sirvió ${p.weeks} de las últimas 52 semanas (riesgo alto desde ${T.hiW})`);
+    if(p.weeks>=T.hiW) r.push(`sirvió ${p.weeks} de las últimas 52 semanas (${pc(p.weeks)}; riesgo alto desde ${T.hiW}, ${pc(T.hiW)})`);
     if(p.sTot>=T.hiS) r.push(`${racha} (riesgo alto desde ${T.hiS})`);
     if(p.nMin>T.maxT) r.push(`sirve en ${p.nMin} equipos (la meta es máximo ${T.maxT})`);
     s = `Riesgo alto porque ${yList(r)}.`;
   } else if(p.lvl==="md"){
     const r=[];
-    if(p.weeks>=T.mdW) r.push(`sirvió ${p.weeks} de las últimas 52 semanas (riesgo medio desde ${T.mdW})`);
+    if(p.weeks>=T.mdW) r.push(`sirvió ${p.weeks} de las últimas 52 semanas (${pc(p.weeks)}; riesgo medio desde ${T.mdW}, ${pc(T.mdW)})`);
     if(p.sTot>=T.mdS) r.push(`${racha} (riesgo medio desde ${T.mdS})`);
     s = `Riesgo medio porque ${yList(r)}. Todavía no llega a riesgo alto (${T.hiW} semanas, racha de ${T.hiS} o más de ${T.maxT} equipos).`;
   } else if(p.lvl==="in"){
@@ -355,7 +356,7 @@ function explain(p){
     if(p.weeks>=T.mdW) s += ` En el año sirvió ${p.weeks} semanas, pero lo reciente pesa más: puede que se esté cansando o desconectando.`;
     else s += ` No significa que dejó de servir; vale la pena buscar a esta persona y animarla.`;
   } else {
-    s = `Sano: sirvió ${p.weeks} de las últimas 52 semanas (riesgo medio empieza en ${T.mdW}), su racha actual es de ${sem(p.streak)} (medio desde ${T.mdS}) y está en ${p.nMin} ${p.nMin===1?"equipo":"equipos"} (máximo ${T.maxT}).`;
+    s = `Sano: sirvió ${p.weeks} de las últimas 52 semanas (${pc(p.weeks)}; riesgo medio empieza en ${T.mdW}, ${pc(T.mdW)}), su racha actual es de ${sem(p.streak)} (medio desde ${T.mdS}) y está en ${p.nMin} ${p.nMin===1?"equipo":"equipos"} (máximo ${T.maxT}).`;
   }
   if(p.dec90>=3) s += ` Además declinó ${p.dec90} veces en los últimos 90 días, que puede ser señal de cansancio.`;
   return s;
@@ -450,7 +451,7 @@ function renderKPIs(){
     k("over","hi",over,`En más de ${T.maxT} equipos`,`meta: máximo ${T.maxT}`) +
     k("in","in",ina,"Baja actividad",`≤${T.inW} de 52 o ≤${T.inR} de las últimas 13`);
   document.querySelectorAll(".maxT").forEach(e=>e.textContent=T.maxT);
-  document.getElementById("rules").innerHTML = `<b>Niveles actuales:</b> Alto = ${T.hiW}+ semanas de 52, o racha de ${T.hiS}+, o más de ${T.maxT} equipos. Medio = ${T.mdW}+ semanas, o racha de ${T.mdS}+. Baja actividad = ${T.inW} semanas o menos de 52 (≈${Math.round(T.inW/52*100)}% del tiempo), o ${T.inR} o menos de las últimas 13, si no está en riesgo alto. Sano = el resto. Se pueden ajustar en la pestaña Ajustes.`;
+  document.getElementById("rules").innerHTML = `<b>Niveles actuales:</b> Alto = ${T.hiW}+ semanas de 52 (${pc(T.hiW)}), o racha de ${T.hiS}+, o más de ${T.maxT} equipos. Medio = ${T.mdW}+ semanas (${pc(T.mdW)}), o racha de ${T.mdS}+. Baja actividad = ${T.inW} semanas o menos de 52 (≈${Math.round(T.inW/52*100)}% del tiempo), o ${T.inR} o menos de las últimas 13, si no está en riesgo alto. Sano = el resto. Se pueden ajustar en la pestaña Ajustes.`;
 }
 
 function renderTeams(){
