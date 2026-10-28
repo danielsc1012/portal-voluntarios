@@ -174,7 +174,7 @@ select,.btn{font:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--
         <button data-r="hi" aria-pressed="false">Alto</button>
         <button data-r="md" aria-pressed="false">Medio</button>
         <button data-r="ok" aria-pressed="false">Sano</button>
-        <button data-r="in" aria-pressed="false">Inactivo</button>
+        <button data-r="in" aria-pressed="false">Baja actividad</button>
       </div>
       <div class="seg" id="svcseg" role="group" aria-label="Qué servicios cuentan">
         <button data-m="sun" aria-pressed="false">Solo domingos</button>
@@ -200,7 +200,7 @@ select,.btn{font:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--
   <section id="tab-equipos" hidden>
     <p class="count">Haz clic en un equipo para ver a su gente. Los equipos con el mismo nombre en distintos tipos de servicio cuentan como un solo ministerio.</p>
     <div class="tscroll"><table class="teamtbl">
-      <thead><tr><th>Equipo</th><th class="num">Voluntarios</th><th>Riesgo</th><th class="num">Alto</th><th class="num">Inactivos</th><th class="num">En más de <span class="maxT"></span> equipos</th><th class="num">Turnos cubiertos por gente en riesgo alto</th></tr></thead>
+      <thead><tr><th>Equipo</th><th class="num">Voluntarios</th><th>Riesgo</th><th class="num">Alto</th><th class="num">Baja actividad</th><th class="num">En más de <span class="maxT"></span> equipos</th><th class="num">Turnos cubiertos por gente en riesgo alto</th></tr></thead>
       <tbody id="teamrows"></tbody>
     </table></div>
   </section>
@@ -227,8 +227,8 @@ select,.btn{font:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--
       <p><b>Semanas servidas:</b> cuántas semanas distintas (de domingo a sábado) sirvió de las últimas 52. Servir el domingo y el miércoles de la misma semana cuenta como una semana; en la ficha de la persona se ve más oscuro.</p>
       <p><b>Racha:</b> cuántas semanas seguidas lleva sirviendo sin un descanso, hasta la semana actual. Si ya está programada para las semanas que siguen, se suman y se marca "+N programadas", para que puedas actuar antes de que pase.</p>
       <p><b>Equipos:</b> en cuántos ministerios distintos sirvió en el año. La meta de la iglesia es <b>máximo <span class="maxT"></span></b>. Los equipos con el mismo nombre en distintos tipos de servicio (por ejemplo, "Alabanza" el domingo y el miércoles) cuentan como uno.</p>
-      <p><b>Inactivo:</b> quien sirvió el 20% del tiempo o menos (10 semanas o menos de 52) y no tiene otra alerta. No es riesgo de agotamiento sino lo contrario: alguien que se está desconectando y vale la pena buscar.</p>
-      <p><b>Color de la barra:</b> teal = sano, amarillo = semanas en riesgo medio, rojo = semanas en riesgo alto, gris = inactivo. La barra solo mira las semanas servidas; el nivel de la persona también considera la racha y los equipos.</p>
+      <p><b>Baja actividad:</b> quien sirvió el 20% del tiempo o menos (10 semanas o menos de 52) y no tiene otra alerta. Sigue siendo parte del equipo; el riesgo aquí no es el agotamiento sino lo contrario, la desconexión: alguien a quien vale la pena buscar, animar e integrar más.</p>
+      <p><b>Color de la barra:</b> teal = sano, amarillo = semanas en riesgo medio, rojo = semanas en riesgo alto, gris = baja actividad. La barra solo mira las semanas servidas; el nivel de la persona también considera la racha y los equipos.</p>
       <p><b>Últimas 13 semanas:</b> cuántas de las últimas 13 sirvió. La flecha ↑ indica que va más cargado que su promedio del año y ↓ que va bajando.</p>
       <p id="rules"></p>
       <p>Se actualiza solo cada lunes temprano. Los números son una alerta para conversar, no un diagnóstico: alguien puede servir cada semana y estar bien, y alguien con pocas semanas puede estar cansado por otras razones.</p>
@@ -240,7 +240,7 @@ select,.btn{font:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--
 const D = __DATA__;
 const UPDATED = "__UPDATED__";
 const DEF = {hiW:39, mdW:26, hiS:8, mdS:5, maxT:2, inW:10};
-const LBL = {hiW:["Riesgo alto desde","semanas servidas de 52"], mdW:["Riesgo medio desde","semanas servidas de 52"], hiS:["Riesgo alto: racha de","semanas seguidas o más"], mdS:["Riesgo medio: racha de","semanas seguidas o más"], maxT:["Máximo de equipos","más de esto = riesgo alto"], inW:["Inactivo hasta","semanas servidas de 52 (10 ≈ 20%)"]};
+const LBL = {hiW:["Riesgo alto desde","semanas servidas de 52"], mdW:["Riesgo medio desde","semanas servidas de 52"], hiS:["Riesgo alto: racha de","semanas seguidas o más"], mdS:["Riesgo medio: racha de","semanas seguidas o más"], maxT:["Máximo de equipos","más de esto = riesgo alto"], inW:["Baja actividad hasta","semanas servidas de 52 (10 ≈ 20%)"]};
 const store = {get(k,d){try{const v=localStorage.getItem("pv-"+k);return v?JSON.parse(v):d}catch(e){return d}}, set(k,v){try{localStorage.setItem("pv-"+k,JSON.stringify(v))}catch(e){}}};
 let T = Object.assign({}, DEF, store.get("thr", {}));
 let excludedST = new Set(store.get("exst", []));
@@ -311,7 +311,7 @@ function compute(){
   }
 }
 
-const LV = {hi:["▲","Alto"], md:["●","Medio"], ok:["✓","Sano"], in:["○","Inactivo"]};
+const LV = {hi:["▲","Alto"], md:["●","Medio"], ok:["✓","Sano"], in:["○","Baja actividad"]};
 const badge = l => `<span class="badge ${l}"><span aria-hidden="true">${LV[l][0]}</span>${LV[l][1]}</span>`;
 
 function filtered(){
@@ -399,9 +399,9 @@ function renderKPIs(){
     k("hi","hi",hi,"Riesgo alto",`${P.length?Math.round(hi/P.length*100):0}% del total`) +
     k("md","md",md,"Riesgo medio",`${P.length?Math.round(md/P.length*100):0}% del total`) +
     k("over","hi",over,`En más de ${T.maxT} equipos`,`meta: máximo ${T.maxT}`) +
-    k("in","in",ina,"Inactivos",`${T.inW} semanas o menos de 52`);
+    k("in","in",ina,"Baja actividad",`${T.inW} semanas o menos de 52`);
   document.querySelectorAll(".maxT").forEach(e=>e.textContent=T.maxT);
-  document.getElementById("rules").innerHTML = `<b>Niveles actuales:</b> Alto = ${T.hiW}+ semanas de 52, o racha de ${T.hiS}+, o más de ${T.maxT} equipos. Medio = ${T.mdW}+ semanas, o racha de ${T.mdS}+. Inactivo = ${T.inW} semanas o menos (≈${Math.round(T.inW/52*100)}% del tiempo) sin otra alerta. Sano = el resto. Se pueden ajustar en la pestaña Ajustes.`;
+  document.getElementById("rules").innerHTML = `<b>Niveles actuales:</b> Alto = ${T.hiW}+ semanas de 52, o racha de ${T.hiS}+, o más de ${T.maxT} equipos. Medio = ${T.mdW}+ semanas, o racha de ${T.mdS}+. Baja actividad = ${T.inW} semanas o menos (≈${Math.round(T.inW/52*100)}% del tiempo) sin otra alerta. Sano = el resto. Se pueden ajustar en la pestaña Ajustes.`;
 }
 
 function renderTeams(){
@@ -416,7 +416,7 @@ function renderTeams(){
   document.getElementById("teamrows").innerHTML = rows.map(a=>{
     const pc = x=>x/a.ppl*100;
     return `<tr class="click" data-k="${esc(a.k)}"><td><b>${esc(minName[a.k]||a.k)}</b></td><td class="num">${a.ppl}</td>
-      <td><div class="stack" title="Alto ${a.hi} · Medio ${a.md} · Sano ${a.ok} · Inactivo ${a.in}">${a.hi?`<span class="s-hi" style="width:${pc(a.hi)}%"></span>`:""}${a.md?`<span class="s-md" style="width:${pc(a.md)}%"></span>`:""}${a.ok?`<span class="s-ok" style="width:${pc(a.ok)}%"></span>`:""}${a.in?`<span class="s-in" style="width:${pc(a.in)}%"></span>`:""}</div></td>
+      <td><div class="stack" title="Alto ${a.hi} · Medio ${a.md} · Sano ${a.ok} · Baja actividad ${a.in}">${a.hi?`<span class="s-hi" style="width:${pc(a.hi)}%"></span>`:""}${a.md?`<span class="s-md" style="width:${pc(a.md)}%"></span>`:""}${a.ok?`<span class="s-ok" style="width:${pc(a.ok)}%"></span>`:""}${a.in?`<span class="s-in" style="width:${pc(a.in)}%"></span>`:""}</div></td>
       <td class="num">${a.hi}</td><td class="num">${a.in}</td><td class="num">${a.over}</td><td class="num">${Math.round(a.hiSlots/a.slots*100)}%</td></tr>`;
   }).join("") || `<tr><td colspan="7" class="empty">Sin datos.</td></tr>`;
 }
