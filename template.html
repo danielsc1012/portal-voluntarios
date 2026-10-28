@@ -13,7 +13,7 @@
   --bg:#f5f6f6; --surface:#ffffff; --fg:#1c1e1e; --body:#4a4d4d; --muted:#6e7272; --line:#dcdede; --track:#eceeee;
   --teal:#00babc; --teal-ink:#00696b; --teal-soft:#e6f8f8; --on-teal:#062b2b;
   --h1:#b3ecec; --h2:#4fcfd0; --h3:#00898b;
-  --hi:#b42318; --hi-soft:#fdecea; --md:#8a5a00; --md-soft:#fdf3dc; --ok:#1f7a4a; --ok-soft:#e5f4ec;
+  --hi:#b42318; --hi-soft:#fdecea; --md:#8a5a00; --md-soft:#fdf3dc; --md-bar:#e5a50a; --ok:#00696b; --ok-soft:#e6f8f8; --in:#5f6464; --in-soft:#eceeee; --in-bar:#a9adad;
   --display:"League Spartan","Helvetica Neue",Arial,sans-serif;
   --body-font:"Montserrat","Helvetica Neue",Arial,sans-serif; --logo:#000;
 }
@@ -21,12 +21,12 @@
   --bg:#141616; --surface:#1c1e1e; --fg:#f0f2f2; --body:#c9cdcd; --muted:#9a9d9d; --line:#2f3333; --track:#262a2a;
   --teal:#00babc; --teal-ink:#5fd6d7; --teal-soft:#0f3233; --on-teal:#062b2b;
   --h1:#11494a; --h2:#00898b; --h3:#3fd3d4;
-  --hi:#ff8a7a; --hi-soft:#3b1a17; --md:#f2c45a; --md-soft:#33290f; --ok:#6fd39c; --ok-soft:#14301f; --logo:#fff; color-scheme:dark}}
+  --hi:#ff8a7a; --hi-soft:#3b1a17; --md:#f2c45a; --md-soft:#33290f; --md-bar:#f2c45a; --ok:#5fd6d7; --ok-soft:#0f3233; --in:#a3a7a7; --in-soft:#262a2a; --in-bar:#5f6464; --logo:#fff; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#141616; --surface:#1c1e1e; --fg:#f0f2f2; --body:#c9cdcd; --muted:#9a9d9d; --line:#2f3333; --track:#262a2a;
   --teal:#00babc; --teal-ink:#5fd6d7; --teal-soft:#0f3233; --on-teal:#062b2b;
   --h1:#11494a; --h2:#00898b; --h3:#3fd3d4;
-  --hi:#ff8a7a; --hi-soft:#3b1a17; --md:#f2c45a; --md-soft:#33290f; --ok:#6fd39c; --ok-soft:#14301f; --logo:#fff; color-scheme:dark}
+  --hi:#ff8a7a; --hi-soft:#3b1a17; --md:#f2c45a; --md-soft:#33290f; --md-bar:#f2c45a; --ok:#5fd6d7; --ok-soft:#0f3233; --in:#a3a7a7; --in-soft:#262a2a; --in-bar:#5f6464; --logo:#fff; color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--fg);font-family:var(--body-font);font-size:15px;line-height:1.5;margin:0}
 .wrap{max-width:1100px;margin:0 auto;padding:0 max(16px,env(safe-area-inset-left,0px)) 80px}
@@ -38,14 +38,14 @@ header svg g{fill:var(--logo)}
 h1{font-family:var(--display);font-weight:700;font-size:clamp(30px,6vw,42px);line-height:1;margin:6px 0 0;letter-spacing:-.01em}
 .lede{color:var(--body);margin:8px 0 0;max-width:66ch;font-size:14px}
 .stamp{font-size:12.5px;color:var(--muted);margin-top:6px}
-.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:4px 0 18px}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:4px 0 18px}
 @media (max-width:720px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .kpi{font:inherit;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px;cursor:pointer;color:var(--fg)}
 .kpi[aria-pressed="true"]{outline:2px solid var(--teal);outline-offset:-1px}
 .kpi .n{font-family:var(--display);font-weight:700;font-size:32px;line-height:1.05;font-variant-numeric:tabular-nums}
 .kpi .l{font-size:12.5px;color:var(--body);font-weight:500;margin-top:2px}
 .kpi .s{font-size:11.5px;color:var(--muted)}
-.kpi.hi .n{color:var(--hi)} .kpi.md .n{color:var(--md)}
+.kpi.hi .n{color:var(--hi)} .kpi.md .n{color:var(--md)} .kpi.in .n{color:var(--in)}
 .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:12px;overflow-x:auto}
 .tabs button{font:inherit;font-size:14px;font-weight:600;padding:10px 14px;border:0;background:none;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
 .tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--teal)}
@@ -72,10 +72,11 @@ select,.btn{font:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--
 .name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .why{display:block;font-size:11.5px;color:var(--muted);font-weight:500;white-space:normal}
 .badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
-.badge.hi{background:var(--hi-soft);color:var(--hi)} .badge.md{background:var(--md-soft);color:var(--md)} .badge.ok{background:var(--ok-soft);color:var(--ok)}
+.badge.hi{background:var(--hi-soft);color:var(--hi)} .badge.md{background:var(--md-soft);color:var(--md)} .badge.ok{background:var(--ok-soft);color:var(--ok)} .badge.in{background:var(--in-soft);color:var(--in)}
 .bar{display:flex;align-items:center;gap:8px;font-size:13px;font-variant-numeric:tabular-nums}
 .bar .tr{flex:1;height:8px;background:var(--track);border-radius:4px;position:relative;min-width:50px}
 .bar .fl{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--teal)}
+.bar .fl.hi{background:var(--hi)} .bar .fl.md{background:var(--md-bar)} .bar .fl.in{background:var(--in-bar)}
 .bar .mk{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--muted);opacity:.6}
 .teams{display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:12px}
 .tchip{padding:1px 7px;border-radius:4px;background:var(--teal-soft);color:var(--teal-ink);font-weight:600;white-space:nowrap}
@@ -122,7 +123,7 @@ select,.btn{font:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--
 .tscroll{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
 .stack{display:flex;height:10px;border-radius:4px;overflow:hidden;min-width:120px;gap:2px;background:var(--surface)}
 .stack span{display:block;height:100%}
-.stack .s-hi{background:var(--hi)} .stack .s-md{background:var(--md)} .stack .s-ok{background:var(--ok)}
+.stack .s-hi{background:var(--hi)} .stack .s-md{background:var(--md-bar)} .stack .s-ok{background:var(--teal)} .stack .s-in{background:var(--in-bar)}
 /* ajustes y explicación */
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:14px}
 .panel h2{font-family:var(--display);font-size:20px;margin:0 0 8px}
@@ -173,6 +174,7 @@ select,.btn{font:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--
         <button data-r="hi" aria-pressed="false">Alto</button>
         <button data-r="md" aria-pressed="false">Medio</button>
         <button data-r="ok" aria-pressed="false">Sano</button>
+        <button data-r="in" aria-pressed="false">Inactivo</button>
       </div>
       <div class="seg" id="svcseg" role="group" aria-label="Qué servicios cuentan">
         <button data-m="sun" aria-pressed="false">Solo domingos</button>
@@ -198,7 +200,7 @@ select,.btn{font:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--
   <section id="tab-equipos" hidden>
     <p class="count">Haz clic en un equipo para ver a su gente. Los equipos con el mismo nombre en distintos tipos de servicio cuentan como un solo ministerio.</p>
     <div class="tscroll"><table class="teamtbl">
-      <thead><tr><th>Equipo</th><th class="num">Voluntarios</th><th>Riesgo</th><th class="num">Alto</th><th class="num">En más de <span class="maxT"></span> equipos</th><th class="num">Turnos cubiertos por gente en riesgo alto</th></tr></thead>
+      <thead><tr><th>Equipo</th><th class="num">Voluntarios</th><th>Riesgo</th><th class="num">Alto</th><th class="num">Inactivos</th><th class="num">En más de <span class="maxT"></span> equipos</th><th class="num">Turnos cubiertos por gente en riesgo alto</th></tr></thead>
       <tbody id="teamrows"></tbody>
     </table></div>
   </section>
@@ -220,11 +222,13 @@ select,.btn{font:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--
   <section id="tab-como" hidden>
     <div class="panel prose">
       <h2>Cómo se calcula</h2>
-      <p>El portal lee de Planning Center Services <b>todos los tipos de servicio</b> de las últimas 52 semanas y de las próximas 6. Cuenta a una persona como "sirviendo" en un plan si confirmó o todavía no respondió. Si <b>declinó</b>, no cuenta como servicio, pero se muestra aparte, porque declinar varias veces seguidas suele ser la primera señal de cansancio.</p>
+      <p>El portal lee de Planning Center Services <b>todos los tipos de servicio</b> de las últimas 52 semanas y de las próximas 6. Cuenta a una persona como "sirviendo" en un plan si confirmó o todavía no respondió. La posición "Leaders" no cuenta: es solo para que los pastores vean los planes. Si <b>declinó</b>, no cuenta como servicio, pero se muestra aparte, porque declinar varias veces seguidas suele ser la primera señal de cansancio.</p>
       <p><b>Solo domingos / Todos los eventos:</b> el botón junto a los filtros cambia qué cuenta como servir. "Solo domingos" mira únicamente el servicio dominical; "Todos los eventos" suma también miércoles, jóvenes, eventos especiales y cualquier otro tipo de servicio en Planning Center. Todos los números y niveles se recalculan al instante.</p>
       <p><b>Semanas servidas:</b> cuántas semanas distintas (de domingo a sábado) sirvió de las últimas 52. Servir el domingo y el miércoles de la misma semana cuenta como una semana; en la ficha de la persona se ve más oscuro.</p>
       <p><b>Racha:</b> cuántas semanas seguidas lleva sirviendo sin un descanso, hasta la semana actual. Si ya está programada para las semanas que siguen, se suman y se marca "+N programadas", para que puedas actuar antes de que pase.</p>
       <p><b>Equipos:</b> en cuántos ministerios distintos sirvió en el año. La meta de la iglesia es <b>máximo <span class="maxT"></span></b>. Los equipos con el mismo nombre en distintos tipos de servicio (por ejemplo, "Alabanza" el domingo y el miércoles) cuentan como uno.</p>
+      <p><b>Inactivo:</b> quien sirvió el 20% del tiempo o menos (10 semanas o menos de 52) y no tiene otra alerta. No es riesgo de agotamiento sino lo contrario: alguien que se está desconectando y vale la pena buscar.</p>
+      <p><b>Color de la barra:</b> teal = sano, amarillo = semanas en riesgo medio, rojo = semanas en riesgo alto, gris = inactivo. La barra solo mira las semanas servidas; el nivel de la persona también considera la racha y los equipos.</p>
       <p><b>Últimas 13 semanas:</b> cuántas de las últimas 13 sirvió. La flecha ↑ indica que va más cargado que su promedio del año y ↓ que va bajando.</p>
       <p id="rules"></p>
       <p>Se actualiza solo cada lunes temprano. Los números son una alerta para conversar, no un diagnóstico: alguien puede servir cada semana y estar bien, y alguien con pocas semanas puede estar cansado por otras razones.</p>
@@ -235,8 +239,8 @@ select,.btn{font:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--
 <script>
 const D = __DATA__;
 const UPDATED = "__UPDATED__";
-const DEF = {hiW:39, mdW:26, hiS:8, mdS:5, maxT:2};
-const LBL = {hiW:["Riesgo alto desde","semanas servidas de 52"], mdW:["Riesgo medio desde","semanas servidas de 52"], hiS:["Riesgo alto: racha de","semanas seguidas o más"], mdS:["Riesgo medio: racha de","semanas seguidas o más"], maxT:["Máximo de equipos","más de esto = riesgo alto"]};
+const DEF = {hiW:39, mdW:26, hiS:8, mdS:5, maxT:2, inW:10};
+const LBL = {hiW:["Riesgo alto desde","semanas servidas de 52"], mdW:["Riesgo medio desde","semanas servidas de 52"], hiS:["Riesgo alto: racha de","semanas seguidas o más"], mdS:["Riesgo medio: racha de","semanas seguidas o más"], maxT:["Máximo de equipos","más de esto = riesgo alto"], inW:["Inactivo hasta","semanas servidas de 52 (10 ≈ 20%)"]};
 const store = {get(k,d){try{const v=localStorage.getItem("pv-"+k);return v?JSON.parse(v):d}catch(e){return d}}, set(k,v){try{localStorage.setItem("pv-"+k,JSON.stringify(v))}catch(e){}}};
 let T = Object.assign({}, DEF, store.get("thr", {}));
 let excludedST = new Set(store.get("exst", []));
@@ -298,15 +302,16 @@ function compute(){
       if(weeks>=T.mdW){lvl="md"; why.push(`${weeks} de 52 semanas`);}
       if(sTot>=T.mdS){lvl="md"; why.push(`racha de ${streak}${ahead?` (+${ahead} prog.)`:""}`);}
     }
+    if(lvl==="ok" && weeks<=T.inW){lvl="in"; why.push(`solo ${weeks} de 52 semanas`);}
     if(p.dec90>=3) why.push(`declinó ${p.dec90} veces en 90 días`);
     const rate = weeks/52*13;
     const trend = r13 - rate >= 2.5 ? "up" : rate - r13 >= 2.5 ? "down" : "";
     P.push({...p, weeks, upcoming, streak, ahead, sTot, lastRest, r13, nMin, lvl, why, trend,
-      rank:(lvl==="hi"?2e6:lvl==="md"?1e6:0) + weeks*1000 + sTot*10 + nMin});
+      rank:(lvl==="hi"?3e6:lvl==="md"?2e6:lvl==="ok"?1e6:0) + weeks*1000 + sTot*10 + nMin});
   }
 }
 
-const LV = {hi:["▲","Alto"], md:["●","Medio"], ok:["✓","Sano"]};
+const LV = {hi:["▲","Alto"], md:["●","Medio"], ok:["✓","Sano"], in:["○","Inactivo"]};
 const badge = l => `<span class="badge ${l}"><span aria-hidden="true">${LV[l][0]}</span>${LV[l][1]}</span>`;
 
 function filtered(){
@@ -332,7 +337,7 @@ function row(p){
   return `<details class="prow" data-i="${p.i}" ${S.open.has(p.i)?"open":""}><summary>
     <span class="name">${esc(p.name)}${p.why.length?`<span class="why">${esc(p.why.join(" · "))}</span>`:""}</span>
     <span>${badge(p.lvl)}</span>
-    <span class="cell"><span class="lab">Semanas</span><span class="bar"><span class="tr"><span class="fl" style="width:${pct}%"></span><span class="mk" style="left:${mk}%" title="Umbral de riesgo alto"></span></span><b>${p.weeks}</b></span></span>
+    <span class="cell"><span class="lab">Semanas</span><span class="bar"><span class="tr"><span class="fl ${p.weeks>=T.hiW?"hi":p.weeks>=T.mdW?"md":p.weeks<=T.inW?"in":""}" style="width:${pct}%"></span><span class="mk" style="left:${mk}%" title="Umbral de riesgo alto"></span></span><b>${p.weeks}</b></span></span>
     <span class="num cell"><span class="lab">Racha</span>${p.streak}${p.ahead?`<span class="why">+${p.ahead} prog.</span>`:""}</span>
     <span class="cell"><span class="lab">Equipos</span><span class="teams">${teamsCell(p)}</span></span>
     <span class="num trend cell"><span class="lab">Últ. 13</span>${p.r13}/13 ${tr}</span>
@@ -387,22 +392,23 @@ function renderList(){
 }
 
 function renderKPIs(){
-  const hi=P.filter(p=>p.lvl==="hi").length, md=P.filter(p=>p.lvl==="md").length, over=P.filter(p=>p.nMin>T.maxT).length;
+  const hi=P.filter(p=>p.lvl==="hi").length, md=P.filter(p=>p.lvl==="md").length, ina=P.filter(p=>p.lvl==="in").length, over=P.filter(p=>p.nMin>T.maxT).length;
   const k = (id,cls,n,l,s)=>`<button class="kpi ${cls}" data-k="${id}" aria-pressed="${S.kpi===id}"><div class="n">${n}</div><div class="l">${l}</div><div class="s">${s}</div></button>`;
   document.getElementById("kpis").innerHTML =
     k("all","",P.length,"Voluntarios activos", svcMode==="sun"?"solo servicio dominical":"todos los eventos") +
     k("hi","hi",hi,"Riesgo alto",`${P.length?Math.round(hi/P.length*100):0}% del total`) +
     k("md","md",md,"Riesgo medio",`${P.length?Math.round(md/P.length*100):0}% del total`) +
-    k("over","hi",over,`En más de ${T.maxT} equipos`,`meta: máximo ${T.maxT}`);
+    k("over","hi",over,`En más de ${T.maxT} equipos`,`meta: máximo ${T.maxT}`) +
+    k("in","in",ina,"Inactivos",`${T.inW} semanas o menos de 52`);
   document.querySelectorAll(".maxT").forEach(e=>e.textContent=T.maxT);
-  document.getElementById("rules").innerHTML = `<b>Niveles actuales:</b> Alto = ${T.hiW}+ semanas de 52, o racha de ${T.hiS}+, o más de ${T.maxT} equipos. Medio = ${T.mdW}+ semanas, o racha de ${T.mdS}+. Sano = el resto. Se pueden ajustar en la pestaña Ajustes.`;
+  document.getElementById("rules").innerHTML = `<b>Niveles actuales:</b> Alto = ${T.hiW}+ semanas de 52, o racha de ${T.hiS}+, o más de ${T.maxT} equipos. Medio = ${T.mdW}+ semanas, o racha de ${T.mdS}+. Inactivo = ${T.inW} semanas o menos (≈${Math.round(T.inW/52*100)}% del tiempo) sin otra alerta. Sano = el resto. Se pueden ajustar en la pestaña Ajustes.`;
 }
 
 function renderTeams(){
   const agg = {};
   for(const p of P){
     for(const [k,n] of Object.entries(p.mins)){
-      const a = agg[k] ||= {k, ppl:0, hi:0, md:0, ok:0, over:0, slots:0, hiSlots:0};
+      const a = agg[k] ||= {k, ppl:0, hi:0, md:0, ok:0, in:0, over:0, slots:0, hiSlots:0};
       a.ppl++; a[p.lvl]++; if(p.nMin>T.maxT) a.over++; a.slots+=n; if(p.lvl==="hi") a.hiSlots+=n;
     }
   }
@@ -410,9 +416,9 @@ function renderTeams(){
   document.getElementById("teamrows").innerHTML = rows.map(a=>{
     const pc = x=>x/a.ppl*100;
     return `<tr class="click" data-k="${esc(a.k)}"><td><b>${esc(minName[a.k]||a.k)}</b></td><td class="num">${a.ppl}</td>
-      <td><div class="stack" title="Alto ${a.hi} · Medio ${a.md} · Sano ${a.ok}">${a.hi?`<span class="s-hi" style="width:${pc(a.hi)}%"></span>`:""}${a.md?`<span class="s-md" style="width:${pc(a.md)}%"></span>`:""}${a.ok?`<span class="s-ok" style="width:${pc(a.ok)}%"></span>`:""}</div></td>
-      <td class="num">${a.hi}</td><td class="num">${a.over}</td><td class="num">${Math.round(a.hiSlots/a.slots*100)}%</td></tr>`;
-  }).join("") || `<tr><td colspan="6" class="empty">Sin datos.</td></tr>`;
+      <td><div class="stack" title="Alto ${a.hi} · Medio ${a.md} · Sano ${a.ok} · Inactivo ${a.in}">${a.hi?`<span class="s-hi" style="width:${pc(a.hi)}%"></span>`:""}${a.md?`<span class="s-md" style="width:${pc(a.md)}%"></span>`:""}${a.ok?`<span class="s-ok" style="width:${pc(a.ok)}%"></span>`:""}${a.in?`<span class="s-in" style="width:${pc(a.in)}%"></span>`:""}</div></td>
+      <td class="num">${a.hi}</td><td class="num">${a.in}</td><td class="num">${a.over}</td><td class="num">${Math.round(a.hiSlots/a.slots*100)}%</td></tr>`;
+  }).join("") || `<tr><td colspan="7" class="empty">Sin datos.</td></tr>`;
 }
 
 function fillTeamSelect(){
@@ -448,7 +454,7 @@ document.getElementById("sort").addEventListener("change", e=>{S.sort=e.target.v
 document.getElementById("kpis").addEventListener("click", e=>{
   const b=e.target.closest(".kpi"); if(!b) return; const k=b.dataset.k;
   S.kpi = S.kpi===k ? "" : k;
-  S.risk = (S.kpi==="hi"||S.kpi==="md") ? S.kpi : "all";
+  S.risk = (S.kpi==="hi"||S.kpi==="md"||S.kpi==="in") ? S.kpi : "all";
   if(S.kpi==="over") S.sort="teams", document.getElementById("sort").value="teams";
   document.querySelectorAll("#riskseg button").forEach(x=>x.setAttribute("aria-pressed", x.dataset.r===S.risk));
   showTab("personas"); renderKPIs(); renderList();});

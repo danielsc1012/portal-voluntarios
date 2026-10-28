@@ -14,6 +14,8 @@ from datetime import date, datetime, timedelta, timezone
 API = "https://api.planningcenteronline.com/services/v2"
 WEEKS_BACK = 52
 WEEKS_AHEAD = 6
+# Posiciones/equipos que no son servicio real (p. ej. "Leaders": placeholder para que los pastores vean los planes)
+EXCLUDE = {"leaders"}
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.environ.get("PORTAL_OUT", os.path.join(HERE, "index.html"))
 
@@ -128,7 +130,11 @@ def main():
                         pid = rel_id(m, "person")
                         if not pid or not a.get("name"):
                             continue
+                        if (a.get("team_position_name") or "").strip().lower() in EXCLUDE:
+                            continue
                         tid = rel_id(m, "team")
+                        if tid and tid in team_index and teams[team_index[tid]][0].strip().lower() in EXCLUDE:
+                            continue
                         ti = team_idx(tid, None, sid) if tid else -1
                         st = (a.get("status") or "U")[:1].upper()
                         if st not in "CUD":
