@@ -227,7 +227,7 @@ select,.btn{font:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--
       <p><b>Semanas servidas:</b> cuántas semanas distintas (de domingo a sábado) sirvió de las últimas 52. Servir el domingo y el miércoles de la misma semana cuenta como una semana; en la ficha de la persona se ve más oscuro.</p>
       <p><b>Racha:</b> cuántas semanas seguidas lleva sirviendo sin un descanso, hasta la semana actual. Si ya está programada para las semanas que siguen, se suman y se marca "+N programadas", para que puedas actuar antes de que pase.</p>
       <p><b>Equipos:</b> en cuántos ministerios distintos sirvió en el año. La meta de la iglesia es <b>máximo <span class="maxT"></span></b>. Los equipos con el mismo nombre en distintos tipos de servicio (por ejemplo, "Alabanza" el domingo y el miércoles) cuentan como uno.</p>
-      <p><b>Baja actividad:</b> quien sirvió el 20% del tiempo o menos (10 semanas o menos de 52) y no tiene otra alerta. Sigue siendo parte del equipo; el riesgo aquí no es el agotamiento sino lo contrario, la desconexión: alguien a quien vale la pena buscar, animar e integrar más.</p>
+      <p><b>Baja actividad:</b> quien sirvió el 20% del tiempo o menos en el año (10 semanas o menos de 52), <b>o</b> solo 2 o menos de las últimas 13 semanas, aunque su año haya sido normal. Lo reciente pesa más: si alguien que servía seguido de pronto baja a 1 o 2 de 13, aparece aquí y no en riesgo medio. Solo el riesgo alto tiene prioridad. Sigue siendo parte del equipo; el riesgo aquí no es el agotamiento sino lo contrario, la desconexión: alguien a quien vale la pena buscar, animar e integrar más.</p>
       <p><b>Color de la barra:</b> teal = sano, amarillo = semanas en riesgo medio, rojo = semanas en riesgo alto, gris = baja actividad. La barra solo mira las semanas servidas; el nivel de la persona también considera la racha y los equipos.</p>
       <p><b>Últimas 13 semanas:</b> cuántas de las últimas 13 sirvió. La flecha ↑ indica que va más cargado que su promedio del año y ↓ que va bajando.</p>
       <p id="rules"></p>
@@ -239,8 +239,8 @@ select,.btn{font:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--
 <script>
 const D = __DATA__;
 const UPDATED = "__UPDATED__";
-const DEF = {hiW:39, mdW:26, hiS:8, mdS:5, maxT:2, inW:10};
-const LBL = {hiW:["Riesgo alto desde","semanas servidas de 52"], mdW:["Riesgo medio desde","semanas servidas de 52"], hiS:["Riesgo alto: racha de","semanas seguidas o más"], mdS:["Riesgo medio: racha de","semanas seguidas o más"], maxT:["Máximo de equipos","más de esto = riesgo alto"], inW:["Baja actividad hasta","semanas servidas de 52 (10 ≈ 20%)"]};
+const DEF = {hiW:39, mdW:26, hiS:8, mdS:5, maxT:2, inW:10, inR:2};
+const LBL = {hiW:["Riesgo alto desde","semanas servidas de 52"], mdW:["Riesgo medio desde","semanas servidas de 52"], hiS:["Riesgo alto: racha de","semanas seguidas o más"], mdS:["Riesgo medio: racha de","semanas seguidas o más"], maxT:["Máximo de equipos","más de esto = riesgo alto"], inW:["Baja actividad hasta","semanas servidas de 52 (10 ≈ 20%)"], inR:["Baja actividad reciente hasta","de las últimas 13 semanas"]};
 const store = {get(k,d){try{const v=localStorage.getItem("pv-"+k);return v?JSON.parse(v):d}catch(e){return d}}, set(k,v){try{localStorage.setItem("pv-"+k,JSON.stringify(v))}catch(e){}}};
 let T = Object.assign({}, DEF, store.get("thr", {}));
 let excludedST = new Set(store.get("exst", []));
@@ -302,7 +302,15 @@ function compute(){
       if(weeks>=T.mdW){lvl="md"; why.push(`${weeks} de 52 semanas`);}
       if(sTot>=T.mdS){lvl="md"; why.push(`racha de ${streak}${ahead?` (+${ahead} prog.)`:""}`);}
     }
-    if(lvl==="ok" && weeks<=T.inW){lvl="in"; why.push(`solo ${weeks} de 52 semanas`);}
+    if(lvl!=="hi"){
+      const lowYear = weeks<=T.inW, lowRecent = r13<=T.inR;
+      if(lowYear || lowRecent){
+        if(lvl==="md") why.length=0;      // lo reciente pesa más que el historial
+        lvl="in";
+        if(lowYear) why.push(`solo ${weeks} de 52 semanas`);
+        if(lowRecent) why.push(`solo ${r13} de las últimas 13`);
+      }
+    }
     if(p.dec90>=3) why.push(`declinó ${p.dec90} veces en 90 días`);
     const rate = weeks/52*13;
     const trend = r13 - rate >= 2.5 ? "up" : rate - r13 >= 2.5 ? "down" : "";
@@ -399,9 +407,9 @@ function renderKPIs(){
     k("hi","hi",hi,"Riesgo alto",`${P.length?Math.round(hi/P.length*100):0}% del total`) +
     k("md","md",md,"Riesgo medio",`${P.length?Math.round(md/P.length*100):0}% del total`) +
     k("over","hi",over,`En más de ${T.maxT} equipos`,`meta: máximo ${T.maxT}`) +
-    k("in","in",ina,"Baja actividad",`${T.inW} semanas o menos de 52`);
+    k("in","in",ina,"Baja actividad",`≤${T.inW} de 52 o ≤${T.inR} de las últimas 13`);
   document.querySelectorAll(".maxT").forEach(e=>e.textContent=T.maxT);
-  document.getElementById("rules").innerHTML = `<b>Niveles actuales:</b> Alto = ${T.hiW}+ semanas de 52, o racha de ${T.hiS}+, o más de ${T.maxT} equipos. Medio = ${T.mdW}+ semanas, o racha de ${T.mdS}+. Baja actividad = ${T.inW} semanas o menos (≈${Math.round(T.inW/52*100)}% del tiempo) sin otra alerta. Sano = el resto. Se pueden ajustar en la pestaña Ajustes.`;
+  document.getElementById("rules").innerHTML = `<b>Niveles actuales:</b> Alto = ${T.hiW}+ semanas de 52, o racha de ${T.hiS}+, o más de ${T.maxT} equipos. Medio = ${T.mdW}+ semanas, o racha de ${T.mdS}+. Baja actividad = ${T.inW} semanas o menos de 52 (≈${Math.round(T.inW/52*100)}% del tiempo), o ${T.inR} o menos de las últimas 13, si no está en riesgo alto. Sano = el resto. Se pueden ajustar en la pestaña Ajustes.`;
 }
 
 function renderTeams(){
