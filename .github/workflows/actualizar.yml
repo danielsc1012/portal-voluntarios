@@ -48,7 +48,8 @@ jobs:
         env:
           STATICRYPT_PASSWORD: ${{ secrets.PORTAL_PASSWORD }}
         run: |
-          npx --yes staticrypt@3.5.4 "$RUNNER_TEMP/index.html" -d _site --short -c false --remember 30 \
+          # Salt fijo (no es secreto): así "Recordarme" sigue funcionando después de cada actualización semanal
+          npx --yes staticrypt@3.5.4 "$RUNNER_TEMP/index.html" -d _site --short -c false --remember 30 -s 62885c5ca0b84eef37f187af02cee3e9 \
             --template-title "Portal de Voluntarios" \
             --template-instructions "Iglesia Northwood · Acceso solo para el director de voluntarios." \
             --template-button "Entrar" --template-placeholder "Contraseña" \
