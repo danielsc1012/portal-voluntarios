@@ -174,6 +174,10 @@ select,.btn{font:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--
         <button data-r="md" aria-pressed="false">Medio</button>
         <button data-r="ok" aria-pressed="false">Sano</button>
       </div>
+      <div class="seg" id="svcseg" role="group" aria-label="Qué servicios cuentan">
+        <button data-m="sun" aria-pressed="false">Solo domingos</button>
+        <button data-m="all" aria-pressed="true">Todos los eventos</button>
+      </div>
       <select id="team" aria-label="Equipo"></select>
       <select id="sort" aria-label="Ordenar">
         <option value="risk">Ordenar: riesgo</option>
@@ -184,7 +188,7 @@ select,.btn{font:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--
       </select>
       <button class="btn" id="csv">Descargar CSV</button>
     </div>
-    <p class="count" id="count"></p>
+    <p class="count"><span id="count"></span> · <span id="svcnote"></span></p>
     <div class="head" aria-hidden="true">
       <span>Persona</span><span>Riesgo</span><span>Semanas servidas (52)</span><span class="r">Racha</span><span>Equipos</span><span class="r">Últ. 13 sem</span><span class="r">Próximas</span>
     </div>
@@ -208,7 +212,7 @@ select,.btn{font:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--
     </div>
     <div class="panel">
       <h2>Tipos de servicio que cuentan</h2>
-      <p class="prose">Desmarca un tipo de servicio si no debe contar como "servir" (por ejemplo, ensayos o eventos especiales).</p>
+      <p class="prose">Desmarca un tipo de servicio si no debe contar como "servir" (por ejemplo, ensayos). Aplica cuando el botón de arriba está en "Todos los eventos"; "Solo domingos" cuenta únicamente el servicio dominical.</p>
       <div class="checks" id="stchecks"></div>
     </div>
   </section>
@@ -217,6 +221,7 @@ select,.btn{font:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--
     <div class="panel prose">
       <h2>Cómo se calcula</h2>
       <p>El portal lee de Planning Center Services <b>todos los tipos de servicio</b> de las últimas 52 semanas y de las próximas 6. Cuenta a una persona como "sirviendo" en un plan si confirmó o todavía no respondió. Si <b>declinó</b>, no cuenta como servicio, pero se muestra aparte, porque declinar varias veces seguidas suele ser la primera señal de cansancio.</p>
+      <p><b>Solo domingos / Todos los eventos:</b> el botón junto a los filtros cambia qué cuenta como servir. "Solo domingos" mira únicamente el servicio dominical; "Todos los eventos" suma también miércoles, jóvenes, eventos especiales y cualquier otro tipo de servicio en Planning Center. Todos los números y niveles se recalculan al instante.</p>
       <p><b>Semanas servidas:</b> cuántas semanas distintas (de domingo a sábado) sirvió de las últimas 52. Servir el domingo y el miércoles de la misma semana cuenta como una semana; en la ficha de la persona se ve más oscuro.</p>
       <p><b>Racha:</b> cuántas semanas seguidas lleva sirviendo sin un descanso, hasta la semana actual. Si ya está programada para las semanas que siguen, se suman y se marca "+N programadas", para que puedas actuar antes de que pase.</p>
       <p><b>Equipos:</b> en cuántos ministerios distintos sirvió en el año. La meta de la iglesia es <b>máximo <span class="maxT"></span></b>. Los equipos con el mismo nombre en distintos tipos de servicio (por ejemplo, "Alabanza" el domingo y el miércoles) cuentan como uno.</p>
@@ -235,6 +240,10 @@ const LBL = {hiW:["Riesgo alto desde","semanas servidas de 52"], mdW:["Riesgo me
 const store = {get(k,d){try{const v=localStorage.getItem("pv-"+k);return v?JSON.parse(v):d}catch(e){return d}}, set(k,v){try{localStorage.setItem("pv-"+k,JSON.stringify(v))}catch(e){}}};
 let T = Object.assign({}, DEF, store.get("thr", {}));
 let excludedST = new Set(store.get("exst", []));
+let svcMode = store.get("svc", "all");          // "sun" = solo servicio dominical, "all" = todos los eventos
+// Servicio dominical = tipos de servicio cuyo nombre dice domingo/dominical/sunday.
+// Si ninguno coincide, se usan los planes que caen en domingo.
+const SUN_ST = new Set(D.st.map((n,i)=>/domin|sunday/i.test(n)?i:-1).filter(i=>i>=0));
 const S = {q:"", risk:"all", team:"", sort:"risk", kpi:"", open:new Set()};
 
 const MES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
@@ -257,7 +266,8 @@ let P = [];   // personas calculadas
 function compute(){
   const per = D.p.map((p,i)=>({i, name:p[0], roster:p[1], wk:new Array(NW).fill(null).map(()=>({n:0,days:new Set(),dec:0,items:[]})), mins:{}, dec90:0, items:[]}));
   for(const [pi,off,ti,st,si] of D.a){
-    if(excludedST.has(si)) continue;
+    if(svcMode==="sun"){ if(SUN_ST.size ? !SUN_ST.has(si) : dayDate(off).getDay()!==0) continue; }
+    else if(excludedST.has(si)) continue;
     const w = Math.floor(off/7); if(w<0||w>=NW) continue;
     const p = per[pi], c = p.wk[w];
     const team = ti>=0 ? D.teams[ti][0] : "Sin equipo";
@@ -380,7 +390,7 @@ function renderKPIs(){
   const hi=P.filter(p=>p.lvl==="hi").length, md=P.filter(p=>p.lvl==="md").length, over=P.filter(p=>p.nMin>T.maxT).length;
   const k = (id,cls,n,l,s)=>`<button class="kpi ${cls}" data-k="${id}" aria-pressed="${S.kpi===id}"><div class="n">${n}</div><div class="l">${l}</div><div class="s">${s}</div></button>`;
   document.getElementById("kpis").innerHTML =
-    k("all","",P.length,"Voluntarios activos","sirvieron o están programados") +
+    k("all","",P.length,"Voluntarios activos", svcMode==="sun"?"solo servicio dominical":"todos los eventos") +
     k("hi","hi",hi,"Riesgo alto",`${P.length?Math.round(hi/P.length*100):0}% del total`) +
     k("md","md",md,"Riesgo medio",`${P.length?Math.round(md/P.length*100):0}% del total`) +
     k("over","hi",over,`En más de ${T.maxT} equipos`,`meta: máximo ${T.maxT}`);
@@ -417,7 +427,12 @@ function renderSettings(){
   document.getElementById("stchecks").innerHTML = D.st.map((n,i)=>`<label><input type="checkbox" data-si="${i}" ${excludedST.has(i)?"":"checked"}> ${esc(n)}</label>`).join("");
 }
 
-function all(){ compute(); renderKPIs(); fillTeamSelect(); renderList(); renderTeams(); }
+function syncSvc(){
+  document.querySelectorAll("#svcseg button").forEach(b=>b.setAttribute("aria-pressed", b.dataset.m===svcMode));
+  const names = SUN_ST.size ? [...SUN_ST].map(i=>D.st[i]).join(", ") : "planes en domingo";
+  document.getElementById("svcnote").textContent = svcMode==="sun" ? `Contando solo: ${names}.` : `Contando todos los tipos de servicio${excludedST.size?` menos ${excludedST.size} excluido(s) en Ajustes`:""}.`;
+}
+function all(){ syncSvc(); compute(); renderKPIs(); fillTeamSelect(); renderList(); renderTeams(); }
 
 // ---------- eventos ----------
 const ws = (D.gen && D.start) ? `${fmt(start,true)} – ${fmt(today,true)}` : "";
@@ -426,6 +441,8 @@ document.getElementById("q").addEventListener("input", e=>{S.q=e.target.value; r
 document.getElementById("riskseg").addEventListener("click", e=>{
   const b=e.target.closest("button"); if(!b) return; S.risk=b.dataset.r; S.kpi="";
   document.querySelectorAll("#riskseg button").forEach(x=>x.setAttribute("aria-pressed", x===b)); renderKPIs(); renderList();});
+document.getElementById("svcseg").addEventListener("click", e=>{
+  const b=e.target.closest("button"); if(!b) return; svcMode=b.dataset.m; store.set("svc", svcMode); all();});
 document.getElementById("team").addEventListener("change", e=>{S.team=e.target.value; renderList();});
 document.getElementById("sort").addEventListener("change", e=>{S.sort=e.target.value; renderList();});
 document.getElementById("kpis").addEventListener("click", e=>{
