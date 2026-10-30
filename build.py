@@ -16,8 +16,11 @@ WEEKS_BACK = 52
 WEEKS_AHEAD = 6
 # Posiciones que no son servicio real ("Pastor" y "Leaders": placeholders para que los pastores vean los planes)
 EXCLUDE = {"leaders", "pastor"}
-# En el equipo "Leaders" solo cuentan estas posiciones; el resto es placeholder
-LEADERS_COUNT = {"preacher"}
+# En el equipo "Leaders" solo cuenta "Preacher"; el resto es placeholder.
+# Preacher se registra como su propio "equipo" y cuenta para semanas, racha y servicios,
+# pero NO para el límite de equipos por voluntario (lista NO_LIMIT, nombres normalizados).
+PREACHER = "preacher"
+NO_LIMIT = ["preacher"]
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.environ.get("PORTAL_OUT", os.path.join(HERE, "index.html"))
 
@@ -136,10 +139,13 @@ def main():
                         if pos in EXCLUDE:
                             continue
                         tid = rel_id(m, "team")
-                        if tid and tid in team_index and teams[team_index[tid]][0].strip().lower() == "leaders" \
-                                and pos not in LEADERS_COUNT:
+                        in_leaders = bool(tid and tid in team_index and teams[team_index[tid]][0].strip().lower() == "leaders")
+                        if in_leaders and pos != PREACHER:
                             continue
-                        ti = team_idx(tid, None, sid) if tid else -1
+                        if pos == PREACHER:
+                            ti = team_idx(f"preacher:{sid}", "Preacher", sid)
+                        else:
+                            ti = team_idx(tid, None, sid) if tid else -1
                         st = (a.get("status") or "U")[:1].upper()
                         if st not in "CUD":
                             st = "U"
@@ -155,7 +161,7 @@ def main():
 
     # ---- quién está en la lista de cada equipo (aunque no lo programen) ----
     for tid, ti in list(team_index.items()):
-        if teams[ti][2]:
+        if teams[ti][2] or tid.startswith("preacher:") or teams[ti][0].strip().lower() == "leaders":
             continue
         for page in paginate(f"/teams/{tid}/people?per_page=100", allow_404=True):
             for pr in page["data"]:
@@ -168,7 +174,7 @@ def main():
     data = {
         "gen": today.isoformat(), "start": start.isoformat(), "week0": week0.isoformat(),
         "weeks": WEEKS_BACK, "ahead": WEEKS_AHEAD,
-        "st": st_names, "teams": teams, "p": people, "a": assigns,
+        "st": st_names, "teams": teams, "p": people, "a": assigns, "nolimit": NO_LIMIT,
     }
     updated = f"{today.day} de {MESES[today.month - 1]} de {today.year}"
     with open(os.path.join(HERE, "template.html"), encoding="utf-8") as f:

@@ -226,8 +226,8 @@ select,.btn{font:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--
   <section id="tab-como" hidden>
     <div class="panel prose">
       <h2>Cómo se calcula</h2>
-      <p>El portal lee de Planning Center Services <b>todos los tipos de servicio</b> de las últimas 52 semanas y de las próximas 6. Cuenta a una persona como "sirviendo" en un plan si confirmó o todavía no respondió. En el equipo "Leaders" solo cuenta la posición <b>Preacher</b>; "Pastor" no cuenta: es solo para que los pastores vean los planes. Si <b>declinó</b>, no cuenta como servicio, pero se muestra aparte, porque declinar varias veces seguidas suele ser la primera señal de cansancio.</p>
-      <p><b>Solo domingos / Todos los eventos:</b> el botón junto a los filtros cambia qué cuenta como servir. "Solo domingos" mira únicamente el servicio dominical; "Todos los eventos" suma también miércoles, jóvenes, eventos especiales y cualquier otro tipo de servicio en Planning Center. Todos los números y niveles se recalculan al instante.</p>
+      <p>El portal lee de Planning Center Services <b>todos los tipos de servicio</b> de las últimas 52 semanas y de las próximas 6. Cuenta a una persona como "sirviendo" en un plan si confirmó o todavía no respondió. En el equipo "Leaders" solo cuenta la posición <b>Preacher</b>; "Pastor" no cuenta: es solo para que los pastores vean los planes. Predicar suma a las semanas, la racha y los servicios, pero <b>no cuenta para el límite de equipos</b>. Si <b>declinó</b>, no cuenta como servicio, pero se muestra aparte, porque declinar varias veces seguidas suele ser la primera señal de cansancio.</p>
+      <p><b>Solo domingos / Todos los eventos:</b> el botón junto a los filtros cambia qué cuenta como servir. "Solo domingos" mira únicamente el servicio dominical; "Todos los eventos" suma también el Servicio Entre Semana (miércoles), jóvenes, eventos especiales y cualquier otro tipo de servicio en Planning Center. Todos los números y niveles se recalculan al instante.</p>
       <p><b>Servicio:</b> un equipo en un día. Si alguien tiene dos posiciones en el mismo equipo el mismo día, cuenta una sola vez; si sirve en dos equipos distintos el mismo día, cuenta como dos servicios. Pasa el cursor sobre el nivel o el nombre (o abre la persona) para ver por qué tiene esa calificación.</p>
       <p><b>Semanas servidas:</b> cuántas semanas distintas (de domingo a sábado) sirvió de las últimas 52. Servir el domingo y el miércoles de la misma semana cuenta como una semana; en la ficha de la persona se ve más oscuro.</p>
       <p><b>Racha:</b> cuántas semanas seguidas lleva sirviendo sin un descanso, hasta la semana actual. Si ya está programada para las semanas que siguen, se suman y se marca "+N programadas", para que puedas actuar antes de que pase.</p>
@@ -270,6 +270,8 @@ const norm = s => s.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().trim()
 const minKey = D.teams.map(t => norm(t[0]));
 const minName = {}; D.teams.forEach((t,i)=>{ if(!minName[minKey[i]]) minName[minKey[i]] = t[0]; });
 const stName = i => D.st[i] ?? "";
+// Posiciones que cuentan como servicio pero no para el límite de equipos (p. ej. Preacher)
+const NOLIM = new Set((D.nolimit||[]).map(norm));
 
 let P = [];   // personas calculadas
 function compute(){
@@ -301,7 +303,7 @@ function compute(){
     if(streak===0) ahead=0;           // si descansa esta semana, la racha empieza de cero
     let lastRest=-1; for(let k=CUR;k>=0;k--){ if(!served[k]){lastRest=k;break;} }
     const r13 = served.slice(CUR-12,CUR+1).filter(Boolean).length;
-    const nMin = Object.keys(p.mins).length;
+    const nMin = Object.keys(p.mins).filter(k=>!NOLIM.has(k)).length;
     const sTot = streak+ahead;
     const why=[]; let lvl="ok";
     if(weeks>=T.hiW){lvl="hi"; why.push(`${weeks} de 52 semanas`);}
@@ -376,7 +378,7 @@ function filtered(){
 function teamsCell(p){
   const ks = Object.keys(p.mins).sort((a,b)=>p.mins[b]-p.mins[a]);
   const over = p.nMin>T.maxT;
-  return `<span class="tnum ${over?"over":""}">${p.nMin}</span>` + ks.map(k=>`<span class="tchip ${over?"over":""}">${esc(minName[k]||k)}</span>`).join("");
+  return `<span class="tnum ${over?"over":""}">${p.nMin}</span>` + ks.map(k=>`<span class="tchip ${over&&!NOLIM.has(k)?"over":""}"${NOLIM.has(k)?' title="Cuenta como servicio, no para el límite de equipos"':""}>${esc(minName[k]||k)}</span>`).join("");
 }
 
 function row(p){
